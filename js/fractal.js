@@ -1,36 +1,5 @@
-var complex = function() {
-    var that = {};
-    that.add = function( a, b ) {
-	return { r: a.r + b.r,
-		 i: a.i + b.i };
-    }
 
-    that.subtract = function( a, b ) {
-	return { r: a.r - b.r, i: a.i - b.i };
-    }
-
-    that.multiply = function( a,b ) {
-	return {r: a.r*b.r - a.i*b.i, 
-		i: a.i*b.r + a.r*b.i };
-    }
-
-    that.toString = function(a) {
-	return "" + a.r + "+" + a.i + "i";
-    }
-
-    that.abs = function(a) {
-	return Math.sqrt( a.r*a.r + a.i*a.i );
-    }
-
-    that.abs2 = function(a) {
-	return a.r*a.r + a.i*a.i;
-    }
-
-    return that;
-};
-var Complex = complex();
-
-var width = 600;
+var width = 400;
 var height = 400;
 
 var c = document.getElementById("fractal");
@@ -42,29 +11,44 @@ c.height = height;
 var imgData = ctx.createImageData(width,height);
 var i;
 var row, column;
-var topLeft = {r: -2, i: 1};
-var bottomRight = {r:1,i:-1};
+var topLeft = {r: -1.9, i: 1.5};
+var bottomRight = {r:0.8,i: -1.5};
 var drow = (bottomRight.i - topLeft.i)/height;
 var dcol = (bottomRight.r - topLeft.r)/width;
-var iter;
-var maxIter = 300;
-for( row = 0; row < height; row++ ) {
-    for (column = 0; column < width; column++ ) {
-	var p = {r: topLeft.r + column*dcol, i: topLeft.i + row*drow };
-	var v = {r: 0, i: 0}
-	iter = 0;
-	while ( Complex.abs2(v) < 4 && iter < maxIter) {
-	    v = Complex.add( Complex.multiply( v, v), p);
-	    iter++;
-	}
+var maxIter = 400;
+var worker = new Worker("js/mandel.js");
 
-	var index = (row*width + column)*4;
-	imgData.data[index+0] = iter % 255;
-	imgData.data[index+1] = iter % 255;
-	imgData.data[index+2] = iter % 255;
-	imgData.data[index+3] = 255;
-    }
-    ctx.putImageData(imgData, 0,0 );
+function computeRow( row ) {
+    var args = {
+	    maxIter: maxIter,
+	    width: width,
+	    height: height, 
+	    topLeft: topLeft,
+	    bottomRight: bottomRight,
+	    row: row,
+	    drow: drow,
+	    dcol: dcol
+	}
+    worker.postMessage( args );
 }
+
+worker.onmessage = function ( event ) {
+    if ( event.data.logData ) {
+	console.log( "Worker: " +event.data.logData );
+    }
+
+    if ( event.data.row >= 0) {
+	var baseIndex = event.data.row*width*4;
+	for (var index = 0; index < width*4; index++)
+	    imgData.data[index+baseIndex] = event.data.imgData[index];
+
+	if ( event.data.row < height ) {
+	    computeRow( event.data.row + 1 );
+	}
+    }
+    ctx.putImageData(imgData,0,0 );
+}
+
+computeRow( 0 );
 
 
