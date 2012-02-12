@@ -2,7 +2,6 @@ function setupFractalCanvas(id) {
     var width = 800;
     var height = 600;
 
-
     var c = document.getElementById(id);
     var ctx = c.getContext("2d");
     c.width = width;
@@ -26,11 +25,12 @@ function setupFractalCanvas(id) {
     var bottomRight = new Complex(0.8, -1.1);
     var drow = (bottomRight.imag - topLeft.imag) / height;
     var dcol = (bottomRight.real - topLeft.real) / width;
+    var juliaPoint = new Complex(-0.8, 0.153);
     var maxIter = 900;
 
     var workers = [];
-    workers[0] = new Worker("js/mandel.js");
-    workers[1] = new Worker("js/mandel.js");
+    workers[0] = new Worker("js/julia.js");
+    workers[1] = new Worker("js/julia.js");
 
     var done = [0, 0];
     function computeRow(workerIndex, row) {
@@ -43,7 +43,8 @@ function setupFractalCanvas(id) {
             row: row,
             drow: drow,
             dcol: dcol,
-            workerIndex: workerIndex
+            workerIndex: workerIndex,
+            juliaPoint: juliaPoint
         };
 
         workers[workerIndex].postMessage(args);
@@ -82,6 +83,8 @@ function setupFractalCanvas(id) {
 
                 if (event.data.row < height) {
                     computeRow(wIndex, event.data.row + 1);
+                } else {
+                    
                 }
             }
             ctx.putImageData(imgData, 0, 0);
