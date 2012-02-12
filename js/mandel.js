@@ -12,21 +12,29 @@ onmessage = function (event) {
     var drow = params.drow;
     var row = params.row;
     var column;
-    var imgData = new Array(width*4);
-    for (column = 0; column < width; column++ ) {
-	var p = {r: topLeft.r + column*dcol, i: topLeft.i + row*drow };
-	var v = {r: 0, i: 0}
-	iter = 0;
-	while ( Complex.abs2(v) < 4 && iter < maxIter) {
-	    v = Complex.add( Complex.multiply( v, v), p);
-	    iter++;
-	}
+    var iter;
+    var imgData = new Array(width);
+    var exitData = new Array(width);
+    var imag = topLeft.imag + row * drow;
 
-	var index = column*4;
-	imgData[index+0] = iter % 255;
-	imgData[index+1] = iter % 255;
-	imgData[index+2] = iter % 255;
-	imgData[index+3] = 255;
+    if (params.workerIndex == 0) {
+        for (var i = 0; i < 10000; i++) {
+            iter = i * i * i;
+        }
     }
-    postMessage( { row: row, imgData: imgData } );
+    for (column = 0; column < width; column++) {
+        var p = new Complex(topLeft.real + column * dcol, imag);
+        var v = new Complex(0, 0);
+
+        iter = 0;
+        while (v.abs2() < 4 && iter < maxIter) {
+            v = v.square().add(p);
+            iter++;
+        }
+
+        var index = column * 4;
+        imgData[column] = iter;
+        exitData[column] = v;
+    }
+    postMessage({ row: row, iterData: imgData, exitData: exitData, workerIndex: params.workerIndex });
 };

@@ -1,9 +1,19 @@
 <html>
-  <head>
-  </head>
-  <body>
-    <canvas id="fractal" width="400" height="200"/>
-    <script type="text/javascript" src="js/fractal.js">
-    </script>
-  </body>
+    <head>
+        <title>Fractals with Web Workers</title>
+        <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+        <script type="text/javascript" src="js/complex.js"></script>
+        <script type="text/javascript" src="js/fractal.js"></script>
+    </head>
+    <body>
+        <script type="text/javascript">
+            $(document).ready(function () {
+                setupFractalCanvas("fractal");
+            });
+        </script>
+
+        <canvas id="fractal" width="400" height="200"/>
+        <script type="text/javascript" src="js/fractal.js">
+        </script>
+    </body>
 </html>
