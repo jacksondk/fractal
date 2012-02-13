@@ -1,96 +1,135 @@
-function setupFractalCanvas(id) {
-    var width = 800;
-    var height = 600;
+var jacksondk = jacksondk || { };
 
-    var c = document.getElementById(id);
-    var ctx = c.getContext("2d");
-    c.width = width;
-    c.height = height;
+jacksondk.workerPaths = {
+    "mandelbrot": "js/mandel.js",
+    "julia": "js/julia.js"
+};
 
-    var lingrad = ctx.createLinearGradient(0, 0, width, 0);
+jacksondk.Fractal = function (canvas) {
+
+    this.canvas = canvas;
+    this.ctx = canvas.getContext("2d");
+    this.width = canvas.width;
+    this.height = canvas.height;
+
+    this.workerPath = jacksondk.workerPaths["mandelbrot"];
+    this.topLeft = new Complex(-1.5, 1.1);
+    this.bottomRight = new Complex(0.8, -1.1);
+
+    this.drow = (this.bottomRight.imag - this.topLeft.imag) / this.height;
+    this.dcol = (this.bottomRight.real - this.topLeft.real) / this.width;
+    this.juliaPoint = new Complex(-0.8, 0.153);
+    this.maxIter = 900;
+
+
+    var lingrad = this.ctx.createLinearGradient(0, 0, this.width, 0);
     lingrad.addColorStop(0, '#00f');
     lingrad.addColorStop(0.1, '#fa0');
     lingrad.addColorStop(0.5, '#ff0');
     lingrad.addColorStop(0.7, '#f1b');
     lingrad.addColorStop(1, '#fff');
+    this.ctx.fillStyle = lingrad;
+    this.ctx.fillRect(0, 0, this.width, 2);
 
-    ctx.fillStyle = lingrad;
-    ctx.fillRect(0, 0, width, 2);
+    this.gradientImage = this.ctx.getImageData(0, 0, this.width, 1);
 
-    var gradientImage = ctx.getImageData(0, 0, width, 1);
+    this.imgData = this.ctx.getImageData(0, 0, this.width, this.height);
 
-    var imgData = ctx.createImageData(width, height);
+    this.workers = [];
+};
 
-    var topLeft = new Complex(-1.5, 1.1);
-    var bottomRight = new Complex(0.8, -1.1);
-    var drow = (bottomRight.imag - topLeft.imag) / height;
-    var dcol = (bottomRight.real - topLeft.real) / width;
-    var juliaPoint = new Complex(-0.8, 0.153);
-    var maxIter = 900;
-
-    var workers = [];
-    workers[0] = new Worker("js/julia.js");
-    workers[1] = new Worker("js/julia.js");
-
-    var done = [0, 0];
-    function computeRow(workerIndex, row) {
+jacksondk.Fractal.prototype = function () {
+    var computeRow = function (workerIndex, row) {
         var args = {
-            maxIter: maxIter,
-            width: width,
-            height: height,
-            topLeft: topLeft,
-            bottomRight: bottomRight,
+            action: "computeRow",
+            maxIter: this.maxIter,
+            width: this.width,
+            height: this.height,
+            topLeft: this.topLeft,
+            bottomRight: this.bottomRight,
             row: row,
-            drow: drow,
-            dcol: dcol,
+            drow: this.drow,
+            dcol: this.dcol,
             workerIndex: workerIndex,
-            juliaPoint: juliaPoint
+            juliaPoint: this.juliaPoint
         };
 
-        workers[workerIndex].postMessage(args);
-    }
+        this.workers[workerIndex].postMessage(args);
+    };
+    var initializeWorker = function (workerIndex) {
 
-    function getColor(iter) {
-        if (iter == maxIter) {
-            return { red: 0, green: 0, blue: 0, alpha: 255 };
+    };
+
+
+    var createWorkers = function (workerPath) {
+        var obj = this;
+        for (var workerIndex = 0; workerIndex < 2; workerIndex++) {
+            this.workers[workerIndex] = new Worker(workerPath);
+
+            this.workers[workerIndex].onmessage = function (event) {
+                if (event.data.logData) {
+                    console.log("Worker: " + event.data.logData);
+                }
+
+                if (event.data.row >= 0) {
+                    var baseIndex = event.data.row * obj.width * 4;
+                    var wIndex = event.data.workerIndex;
+                    for (var index = 0; index < obj.width; index++) {
+                        var color = getColor.call(obj, event.data.iterData[index]);
+                        var destIndex = baseIndex + 4 * index;
+                        obj.imgData.data[destIndex] = color.red;
+                        obj.imgData.data[destIndex + 1] = color.green;
+                        obj.imgData.data[destIndex + 2] = color.blue;
+                        obj.imgData.data[destIndex + 3] = color.alpha;
+                    }
+
+                    if (event.data.row < obj.height) {
+                        computeRow.call(obj, wIndex, event.data.row + 1);
+                    } else {
+
+                    }
+                }
+                obj.ctx.putImageData(obj.imgData, 0, 0);
+            };
         }
-        var index = (iter % gradientImage.width)*4;
-        return { red: gradientImage.data[index],
-            green: gradientImage.data[index + 1],
-            blue: gradientImage.data[index + 2],
-            alpha: gradientImage.data[index + 3]
-        };
-    }
+    };
 
-    for (var workerIndex = 0; workerIndex < workers.length; workerIndex++) {
-        workers[workerIndex].onmessage = function (event) {
-            if (event.data.logData) {
-                console.log("Worker: " + event.data.logData);
+    var setType = function (type) {
+        this.workerPath = workerPaths[type];
+    },
+        getColor = function (iter) {
+            if (iter == this.maxIter) {
+                return { red: 0, green: 0, blue: 0, alpha: 255 };
             }
+            var index = (iter % this.gradientImage.width) * 4;
+            return { red: this.gradientImage.data[index],
+                green: this.gradientImage.data[index + 1],
+                blue: this.gradientImage.data[index + 2],
+                alpha: this.gradientImage.data[index + 3]
+            };
+        },
 
-            if (event.data.row >= 0) {
-                var baseIndex = event.data.row * width * 4;
-                var wIndex = event.data.workerIndex;
-                done[wIndex]++;
-                for (var index = 0; index < width; index++) {
-                    var color = getColor(event.data.iterData[index]);
-                    var destIndex = baseIndex + 4 * index;
-                    imgData.data[destIndex] = color.red;
-                    imgData.data[destIndex + 1] = color.green;
-                    imgData.data[destIndex + 2] = color.blue;
-                    imgData.data[destIndex + 3] = color.alpha;
-                }
+        render = function () {
+            createWorkers.call(this, this.workerPath);
+            computeRow.call(this, 0, 0);
+            computeRow.call(this, 1, 1);
+        },
+        setTopLeft = function (point) {
+            this.topLeft = point;
+        },
+        setBottomRight = function (point) {
+            this.bottomRight = point;
+        }
+        ;
 
-                if (event.data.row < height) {
-                    computeRow(wIndex, event.data.row + 1);
-                } else {
-                    
-                }
-            }
-            ctx.putImageData(imgData, 0, 0);
-        };
-    }
+    return {
+        setType: setType,
+        setTopLeft: setTopLeft,
+        setBottomRight: setBottomRight,
+        render: render
+    };
+} ();
 
-    computeRow(0, 0);
-    computeRow(1, 1);
+function setupFractalCanvas(id) {
+    
 }

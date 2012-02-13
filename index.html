@@ -1,19 +1,34 @@
 <html>
-    <head>
-        <title>Fractals with Web Workers</title>
-        <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
-        <script type="text/javascript" src="js/complex.js"></script>
-        <script type="text/javascript" src="js/fractal.js"></script>
-    </head>
-    <body>
-        <script type="text/javascript">
-            $(document).ready(function () {
-                setupFractalCanvas("fractal");
-            });
-        </script>
+<head>
+    <title>Fractals with Web Workers</title>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script type="text/javascript" src="js/complex.js"></script>
+    <script type="text/javascript" src="js/fractal.js"></script>
+</head>
+<body>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            var fra = new jacksondk.Fractal(document.getElementById("fractal"));
+            fra.render();
 
-        <canvas id="fractal" width="400" height="200"/>
-        <script type="text/javascript" src="js/fractal.js">
-        </script>
-    </body>
+            $("#render").click(function () {
+                fra.render();
+            });
+
+            $("#fractal").click(function (event) {
+                var x = event.layerX;
+                var y = event.layerY;
+
+                fra.setTopLeft(new Complex(-1.0, -1));
+                fra.setBottomRight(new Complex(-0.3, -0.4));
+                fra.render();
+            });
+        });
+    </script>
+    <div>
+        <canvas id="fractal" width="400" height="200" />
+    </div>
+    <div id="render">
+        Render again</div>
+</body>
 </html>
