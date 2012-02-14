@@ -11,24 +11,42 @@
             var fra = new jacksondk.Fractal(document.getElementById("fractal"));
             fra.render();
 
+            var julia = new jacksondk.Fractal(document.getElementById("julia"));
+            
+            julia.setType("julia");
+            julia.setTopLeft(new Complex(-2, 2));
+            julia.setBottomRight(new Complex(2, -2));
+            julia.juliaPoint = new Complex(-0.123, 0.745);
+            
+
             $("#render").click(function () {
+                fra.setType("mandelbrot");
+                fra.setTopLeft(new Complex(-1.8, 1.1));
+                fra.setBottomRight(new Complex(1.8, -1.1));
                 fra.render();
             });
 
             $("#fractal").click(function (event) {
-                var x = event.layerX;
-                var y = event.layerY;
-
-                fra.setTopLeft(new Complex(-1.0, -1));
-                fra.setBottomRight(new Complex(-0.3, -0.4));
-                fra.render();
+                var x = event.offsetX;
+                var y = event.offsetY;
+                var r = fra.topLeft.real + ((fra.bottomRight.real - fra.topLeft.real) / fra.width) * x;
+                var i = fra.topLeft.imag + ((fra.bottomRight.imag - fra.topLeft.imag) / fra.height) * y;
+                
+                julia.juliaPoint = new Complex(r, i);
+                julia.render();
             });
         });
     </script>
     <div>
+        <h1>Mandelbrot</h1>
         <canvas id="fractal" width="400" height="200" />
+        <div id="render">
+            Render again</div>
     </div>
-    <div id="render">
-        Render again</div>
+    <div>
+        <h1>Julia</h1>
+        <canvas id="julia" width="400" height="200" />
+    </div>
+    
 </body>
 </html>

@@ -1,4 +1,4 @@
-var jacksondk = jacksondk || { };
+var jacksondk = jacksondk || {};
 
 jacksondk.workerPaths = {
     "mandelbrot": "js/mandel.js",
@@ -16,8 +16,6 @@ jacksondk.Fractal = function (canvas) {
     this.topLeft = new Complex(-1.5, 1.1);
     this.bottomRight = new Complex(0.8, -1.1);
 
-    this.drow = (this.bottomRight.imag - this.topLeft.imag) / this.height;
-    this.dcol = (this.bottomRight.real - this.topLeft.real) / this.width;
     this.juliaPoint = new Complex(-0.8, 0.153);
     this.maxIter = 900;
 
@@ -39,32 +37,42 @@ jacksondk.Fractal = function (canvas) {
 };
 
 jacksondk.Fractal.prototype = function () {
+    var updateDeltas = function() {
+        
+    };
+
     var computeRow = function (workerIndex, row) {
         var args = {
             action: "computeRow",
+            row: row,
+            workerIndex: workerIndex,
+        };
+
+        this.workers[workerIndex].postMessage(args);
+    };
+
+    var initializeWorker = function (workerIndex) {        
+        var drow = (this.bottomRight.imag - this.topLeft.imag) / this.height;
+        var dcol = (this.bottomRight.real - this.topLeft.real) / this.width;
+        var args = {
+            action: "setup",
             maxIter: this.maxIter,
             width: this.width,
             height: this.height,
             topLeft: this.topLeft,
             bottomRight: this.bottomRight,
-            row: row,
-            drow: this.drow,
-            dcol: this.dcol,
+            drow: drow,
+            dcol: dcol,
             workerIndex: workerIndex,
             juliaPoint: this.juliaPoint
         };
-
         this.workers[workerIndex].postMessage(args);
     };
-    var initializeWorker = function (workerIndex) {
-
-    };
-
 
     var createWorkers = function (workerPath) {
         var obj = this;
         for (var workerIndex = 0; workerIndex < 2; workerIndex++) {
-            this.workers[workerIndex] = new Worker(workerPath);
+            obj.workers[workerIndex] = new Worker(obj.workerPath);
 
             this.workers[workerIndex].onmessage = function (event) {
                 if (event.data.logData) {
@@ -95,14 +103,15 @@ jacksondk.Fractal.prototype = function () {
     };
 
     var setType = function (type) {
-        this.workerPath = workerPaths[type];
+        this.workerPath = jacksondk.workerPaths[type];
     },
         getColor = function (iter) {
             if (iter == this.maxIter) {
                 return { red: 0, green: 0, blue: 0, alpha: 255 };
             }
             var index = (iter % this.gradientImage.width) * 4;
-            return { red: this.gradientImage.data[index],
+            return {
+                red: this.gradientImage.data[index],
                 green: this.gradientImage.data[index + 1],
                 blue: this.gradientImage.data[index + 2],
                 alpha: this.gradientImage.data[index + 3]
@@ -111,16 +120,19 @@ jacksondk.Fractal.prototype = function () {
 
         render = function () {
             createWorkers.call(this, this.workerPath);
+            initializeWorker.call(this, 0);
+            initializeWorker.call(this, 1);
             computeRow.call(this, 0, 0);
             computeRow.call(this, 1, 1);
         },
         setTopLeft = function (point) {
             this.topLeft = point;
+            updateDeltas.call(this);
         },
         setBottomRight = function (point) {
             this.bottomRight = point;
-        }
-        ;
+            updateDeltas.call(this);
+        };
 
     return {
         setType: setType,
@@ -129,7 +141,3 @@ jacksondk.Fractal.prototype = function () {
         render: render
     };
 } ();
-
-function setupFractalCanvas(id) {
-    
-}
