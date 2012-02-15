@@ -8,16 +8,22 @@
 <body>
     <script type="text/javascript">
         $(document).ready(function () {
-            var fra = new jacksondk.Fractal(document.getElementById("fractal"));
+            var fra = new jacksondk.Fractal(document.getElementById("fractal"), 3);
+
+            fra.ondone = function (duration) {
+                $("#duration").html("Duration : " + duration + " ms");
+            };
             fra.render();
 
-            var julia = new jacksondk.Fractal(document.getElementById("julia"));
-            
+            var julia = new jacksondk.Fractal(document.getElementById("julia"), 2);
+            julia.ondone = function (duration) {
+                $("#duration").html("Duration : " + duration + " ms");
+            };
             julia.setType("julia");
             julia.setTopLeft(new Complex(-2, 2));
             julia.setBottomRight(new Complex(2, -2));
             julia.juliaPoint = new Complex(-0.123, 0.745);
-            
+
 
             $("#render").click(function () {
                 fra.setType("mandelbrot");
@@ -31,22 +37,31 @@
                 var y = event.offsetY;
                 var r = fra.topLeft.real + ((fra.bottomRight.real - fra.topLeft.real) / fra.width) * x;
                 var i = fra.topLeft.imag + ((fra.bottomRight.imag - fra.topLeft.imag) / fra.height) * y;
-                
+
                 julia.juliaPoint = new Complex(r, i);
                 julia.render();
             });
         });
     </script>
+    <h1>
+        An experiment with Web-Workers and fractals</h1>
+    <p>
+        In order to learn about the concept of web workers I revived one of my first programming
+        experiments; creating fractals like the Mandelbrot set.
+    </p>
     <div>
-        <h1>Mandelbrot</h1>
-        <canvas id="fractal" width="400" height="200" />
+        <h1>
+            Mandelbrot</h1>
+        <canvas id="fractal" width="600" height="400" />
         <div id="render">
             Render again</div>
     </div>
     <div>
-        <h1>Julia</h1>
-        <canvas id="julia" width="400" height="200" />
+        <h1>
+            Julia</h1>
+        <canvas id="julia" width="600" height="400" />
     </div>
-    
+    <div id="duration">
+    </div>
 </body>
 </html>

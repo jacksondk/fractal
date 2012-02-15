@@ -19,7 +19,7 @@ var actions = {
         exitData = new Array(width);
         juliaPoint = pdata.juliaPoint;
 
-        postMessage({ logData: "From " + topLeft.real + " to " + bottomRight.imag });
+        postMessage({ logData: "From real " + topLeft.real + " to " + bottomRight.real });
     },
 
     computeRow: function (pdata) {
