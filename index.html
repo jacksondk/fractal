@@ -8,16 +8,16 @@
 <body>
     <script type="text/javascript">
         $(document).ready(function () {
-            var fra = new jacksondk.Fractal(document.getElementById("fractal"), 3);
+            var fra = new jacksondk.Fractal(document.getElementById("fractal"), 2);
 
             fra.ondone = function (duration) {
-                $("#duration").html("Duration : " + duration + " ms");
+                $("#duration").append("Mandel duration : " + duration + " ms<br/>");
             };
             fra.render();
 
             var julia = new jacksondk.Fractal(document.getElementById("julia"), 2);
             julia.ondone = function (duration) {
-                $("#duration").html("Duration : " + duration + " ms");
+                $("#duration").html("Julia Duration : " + duration + " ms");
             };
             julia.setType("julia");
             julia.setTopLeft(new Complex(-2, 2));
@@ -26,9 +26,8 @@
 
 
             $("#render").click(function () {
+                fra.workerCount = parseInt($("#workerCount").val());
                 fra.setType("mandelbrot");
-                fra.setTopLeft(new Complex(-1.8, 1.1));
-                fra.setBottomRight(new Complex(1.8, -1.1));
                 fra.render();
             });
 
@@ -52,16 +51,19 @@
     <div>
         <h1>
             Mandelbrot</h1>
-        <canvas id="fractal" width="600" height="400" />
-        <div id="render">
+        <canvas id="fractal" width="600" height="400">Needs canvas support</canvas>
+        <h2>
+            Actions</h2>
+        <input type="text" id="workerCount" />
+        <div id="render" style="border-style: solid">
             Render again</div>
+        <div id="duration">
+        </div>
     </div>
     <div>
         <h1>
             Julia</h1>
         <canvas id="julia" width="600" height="400" />
-    </div>
-    <div id="duration">
     </div>
 </body>
 </html>

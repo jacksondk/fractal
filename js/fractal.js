@@ -9,6 +9,7 @@ jacksondk.Fractal = function (canvas, workerCount) {
 
     this.canvas = canvas;
     this.workerCount = workerCount;
+    this.workerDoneCount = 0;
 
     this.ctx = canvas.getContext("2d");
     this.width = canvas.width;
@@ -19,8 +20,8 @@ jacksondk.Fractal = function (canvas, workerCount) {
     this.bottomRight = new Complex(0.8, -1.1);
 
     this.juliaPoint = new Complex(-0.8, 0.153);
-    this.maxIter = 900;
-    
+    this.maxIter = 1200;
+
     var lingrad = this.ctx.createLinearGradient(0, 0, this.width, 0);
     lingrad.addColorStop(0, '#00f');
     lingrad.addColorStop(0.1, '#fa0');
@@ -38,21 +39,21 @@ jacksondk.Fractal = function (canvas, workerCount) {
 };
 
 jacksondk.Fractal.prototype = function () {
-    var updateDeltas = function() {
-        
+    var updateDeltas = function () {
+
     };
 
     var computeRow = function (workerIndex, row) {
         var args = {
             action: "computeRow",
             row: row,
-            workerIndex: workerIndex,
+            workerIndex: workerIndex
         };
 
         this.workers[workerIndex].postMessage(args);
     };
 
-    var initializeWorker = function (workerIndex) {        
+    var initializeWorker = function (workerIndex) {
         var drow = (this.bottomRight.imag - this.topLeft.imag) / this.height;
         var dcol = (this.bottomRight.real - this.topLeft.real) / this.width;
         var args = {
@@ -75,7 +76,7 @@ jacksondk.Fractal.prototype = function () {
         var rowData = obj.ctx.createImageData(obj.width, 1);
         for (var workerIndex = 0; workerIndex < obj.workerCount; workerIndex++) {
             obj.workers[workerIndex] = new Worker(obj.workerPath);
-            
+
             this.workers[workerIndex].onmessage = function (event) {
                 if (event.data.logData) {
                     console.log("Worker: " + event.data.logData);
@@ -91,14 +92,17 @@ jacksondk.Fractal.prototype = function () {
                         rowData.data[destIndex + 2] = color.blue;
                         rowData.data[destIndex + 3] = color.alpha;
                     }
-                    obj.ctx.putImageData(rowData, 0, event.data.row);  
+                    obj.ctx.putImageData(rowData, 0, event.data.row);
                     if (obj.nextRow < obj.height) {
                         computeRow.call(obj, wIndex, obj.nextRow);
                         obj.nextRow = obj.nextRow + 1;
                     } else {
-                        var duration = new Date().getTime() - obj.startTime;
-                        if ( typeof obj.ondone === 'function' ) {
-                            obj.ondone(duration);
+                        obj.workerDoneCount++;
+                        if (obj.workerDoneCount == obj.workerCount) {
+                            var duration = new Date().getTime() - obj.startTime;
+                            if (typeof obj.ondone === 'function') {
+                                obj.ondone(duration);
+                            }
                         }
                     }
                 }
@@ -124,14 +128,15 @@ jacksondk.Fractal.prototype = function () {
 
         render = function () {
             this.startTime = new Date().getTime();
+            this.workerDoneCount = 0;
             createWorkers.call(this, this.workerPath);
-            
+
             this.nextRow = this.workerCount;
-            for(var workerIndex = 0; workerIndex < this.workerCount; workerIndex++) {
+            for (var workerIndex = 0; workerIndex < this.workerCount; workerIndex++) {
                 initializeWorker.call(this, workerIndex);
                 computeRow.call(this, workerIndex, workerIndex);
             }
-            
+
         },
         setTopLeft = function (point) {
             this.topLeft = point;
