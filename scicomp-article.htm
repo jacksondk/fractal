@@ -6,150 +6,153 @@
     <script type="text/javascript" src="js/complex.js"></script>
     <script type="text/javascript" src="js/fractal.js"></script>
 </head>
-<body style="width: 800px">
-    <p>
-        Until recently Javascript has been a single threaded creature where long running
-        compuations would freeze the browser. <a href="http://www.whatwg.org/specs/web-apps/current-work/multipage/workers.html">
-            Web Workers</a> is a proposal that allows thread like functionality in Javascript.</p>
-    <p>
-        In order to learn about Web Workers I put it to the test by applying it to the creation
-        of Mandelbrot fractals.</p>
-    <h1>
-        Web Workers</h1>
-    <p>
-        A Web Worker makes it possible to run Javascript code without blocking the user
-        interface. A Web Worker is created as follows
-        <pre>
+    <body style="width: 800px">
+        <p>Last update: 2012-02-26</p>
+        <p>
+            Until recently Javascript has been a single threaded creature where long running
+            compuations would freeze the browser. <a href="http://www.whatwg.org/specs/web-apps/current-work/multipage/workers.html">
+                                                      Web Workers</a> is a proposal that allows thread like functionality in Javascript.</p>
+        <p>
+            In order to learn about Web Workers I put it to the test by applying it to the creation
+            of Mandelbrot fractals.</p>
+        <h1>
+            Web Workers</h1>
+        <p>
+            A Web Worker makes it possible to run Javascript code without blocking the user
+            interface. A Web Worker is created as follows
+            <pre>
 // Main script
 var worker = new WebWorder( url );
 </pre>
-        where url must point to a Javascript file. The script is started immediately. This
-        article describes the 'standard' Web Worker, not the 'shared' Web Worker.
-    </p>
-    <p>
-        Web Workers are not threads as known from C#, Java or the like. The Web Worker does
-        not share memory with the script that initiates it (as in C# and Java). In stead,
-        communication is done through messages. Thus, it compares more to processes with
-        some kind of inter-process communication. In order to receive a message from a Web
-        Worker you attach to the onmessage event. 
-        <pre>
+            where url must point to a Javascript file. The script is started immediately. This
+            article describes the 'standard' Web Worker, not the 'shared' Web Worker.
+        </p>
+        <p>
+            Web Workers are not threads as known from C#, Java or the like. The Web Worker does
+            not share memory with the script that initiates it (as in C# and Java). In stead,
+            communication is done through messages. Thus, it compares more to processes with
+            some kind of inter-process communication. In order to receive a message from a Web
+            Worker you attach to the onmessage event. 
+            <pre>
 // Main script
 worker.onmessage = function( eventData ) {
 };
 </pre>
-        Similarly a worker can recieve messages with the onmessage event in its global scope
-        <pre>
+            Similarly a worker can recieve messages with the onmessage event in its global scope
+            <pre>
 // Worker script
 onmessage = function( eventData ) {
 };
 </pre>
-    </p>
-    <p>
-        In order to send messages the method postMessage is used. For the Web Worker the
-        function exist on the global scope, that is,
-        <pre>
+        </p>
+        <p>
+            In order to send messages the method postMessage is used. For the Web Worker the
+            function exist on the global scope, that is,
+            <pre>
 // Worker script
 postMessage( data );
 </pre>
-        The main script uses the postMessage method on the worker object, that is,
-        <pre>
+            The main script uses the postMessage method on the worker object, that is,
+            <pre>
 // Main script
 worker.postMessage( data );
 </pre>
-    </p>
-    <p>
-        The data transfered between worker and main script (in either direction) are only
-        json like objects.</p>
-    <p>
-        My example uses Web Workers to compute rows of fractals in the complex plane. A
-        (variable) number of workers are initialized with the dimensions of the complex
-        plane and the coresponding height and width of a canvas. The main script then sends
-        messages to each worker asking it to compute a row. When a row has been computed
-        a message is posted to the main script, which then updates the image. If more rows
-        remains the worker is put to work again.
-    </p>
-    <h1>
-        Mandelbrot and Julia fractals</h1>
-    <p>
-        Both the Mandelbrot and the Julia fractals are defined for the complex plane. They
-        are computed using the formula $$v_{i+1} = v_i^2 + p$$. The difference between the
-        Mandelbrot and Julia fractals lie in the initialization of the formula. The Mandelbrot
-        has \(v_0 = 0\) and \(p\) is the point on the complex plane under investigation.
-        The Julia set uses \(v\) as the point in the complex plane under investigation while
-        \(p\) is some point in the complex plane. That is there is a Julia fractal for each
-        point in the complex plane. More detailed explanations are available at Wikipedia
-        <a href="http://en.wikipedia.org/wiki/Mandelbrot_set">Mandelbrot set</a>, <a href="http://en.wikipedia.org/wiki/Julia_set">
-            Julia set</a>. Another option is at Mathworld, <a href="http://mathworld.wolfram.com/MandelbrotSet.html">
-                Mandelbrot set</a> and <a href="http://mathworld.wolfram.com/JuliaSet.html">Julia set</a>
-    </p>
-    <p>
-        Enough talk and code - let's see some pictures!</p>
-    <p>
-        Number of workers to use during computations
-        <input type="text" value="2" id="workerCount" /><input type="button" value="Redraw" /></p>
-    <canvas id="fractal" width="700" height="600">This feature needs canvas support!</canvas>
-    <p>
-        Duration of last Mandelbrot set computation <span id="duration"></span>ms</p>
-    <p>
-        Each point of complex plane has a Julia set associated. Click on a point on the
-        above Mandelbrot set and the corresponding Julia set will be drawn on the canvas
-        below. The most interesting examples are found along the edge of the Mandelbrot
-        set.</p>
-    <canvas id="julia" width="700" height="600">This feature needs canvas support!</canvas>
-    <p>
-        Duration of last Julia set computation <span id="juliaDuration"></span>ms</p>
-    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
-    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
-    </script>
-    <script type="text/javascript" src="js/complex.js"></script>
-    <script type="text/javascript" src="js/fractal.js"></script>
-    <script type="text/javascript">
-        $(document).ready(function () {
-            var fra = new jacksondk.Fractal(document.getElementById("fractal"), 2);
-            fra.ondone = function (duration) {
-                $("#duration").html(duration);
-            };
-            fra.render();
-
-            var julia = new jacksondk.Fractal(document.getElementById("julia"), 2);
-            julia.ondone = function (duration) {
-                $("#juliaDuration").html(duration);
-            };
-            julia.setType("julia");
-            julia.setTopLeft(new Complex(-2, 2));
-            julia.setBottomRight(new Complex(2, -2));
-
-            $("#render").click(function () {
-                fra.workerCount = parseInt($("#workerCount").val());
-                fra.setType("mandelbrot");
+        </p>
+        <p>
+            The data transfered between worker and main script (in either direction) are only
+            json like objects.</p>
+        <p>
+            My example uses Web Workers to compute rows of fractals in the complex plane. A
+            (variable) number of workers are initialized with the dimensions of the complex
+            plane and the coresponding height and width of a canvas. The main script then sends
+            messages to each worker asking it to compute a row. When a row has been computed
+            a message is posted to the main script, which then updates the image. If more rows
+            remains the worker is put to work again.
+        </p>
+        <h1>
+            Mandelbrot and Julia fractals</h1>
+        <p>
+            Both the Mandelbrot and the Julia fractals are defined for the complex plane. They
+            are computed using the formula $$v_{i+1} = v_i^2 + p$$. The difference between the
+            Mandelbrot and Julia fractals lie in the initialization of the formula. The Mandelbrot
+            has \(v_0 = 0\) and \(p\) is the point on the complex plane under investigation.
+            The Julia set uses \(v\) as the point in the complex plane under investigation while
+            \(p\) is some point in the complex plane. That is there is a Julia fractal for each
+            point in the complex plane. More detailed explanations are available at Wikipedia
+            <a href="http://en.wikipedia.org/wiki/Mandelbrot_set">Mandelbrot set</a>, <a href="http://en.wikipedia.org/wiki/Julia_set">
+                                                                                          Julia set</a>. Another option is at Mathworld, <a href="http://mathworld.wolfram.com/MandelbrotSet.html">
+                                                                                                                                             Mandelbrot set</a> and <a href="http://mathworld.wolfram.com/JuliaSet.html">Julia set</a>
+        </p>
+        <p>
+            Enough talk and code - let's see some pictures!</p>
+        <p>
+            Number of workers to use during computations
+            <input type="text" value="2" id="workerCount" /><input type="button" value="Redraw" /></p>
+        <canvas id="fractal" width="700" height="600">This feature needs canvas support!</canvas>
+        <p>
+            Duration of last Mandelbrot set computation <span id="duration"></span>ms</p>
+        <p>
+            Each point of complex plane has a Julia set associated. Click on a point on the
+            above Mandelbrot set and the corresponding Julia set will be drawn on the canvas
+            below. The most interesting examples are found along the edge of the Mandelbrot
+            set.</p>
+        <canvas id="julia" width="700" height="600">This feature needs canvas support!</canvas>
+        <p>
+            Duration of last Julia set computation <span id="juliaDuration"></span>ms</p>
+        <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+        <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+        </script>
+        <script type="text/javascript" src="js/complex.js"></script>
+        <script type="text/javascript" src="js/fractal.js"></script>
+        <script type="text/javascript">
+            $(document).ready(function () {
+                var fra = new jacksondk.Fractal(document.getElementById("fractal"), 2);
+                fra.ondone = function (duration) {
+                    $("#duration").html(duration);
+                };
                 fra.render();
-            });
 
-            $("#fractal").click(function (event) {
-                var x = event.offsetX;
-                var y = event.offsetY;
-                var r = fra.topLeft.real + ((fra.bottomRight.real - fra.topLeft.real) / fra.width) * x;
-                var i = fra.topLeft.imag + ((fra.bottomRight.imag - fra.topLeft.imag) / fra.height) * y;
+                var julia = new jacksondk.Fractal(document.getElementById("julia"), 2);
+                julia.ondone = function (duration) {
+                    $("#juliaDuration").html(duration);
+                };
+                julia.setType("julia");
+                julia.setTopLeft(new Complex(-2, 2));
+                julia.setBottomRight(new Complex(2, -2));
 
-                julia.juliaPoint = new Complex(r, i);
-                julia.render();
+                $("#render").click(function () {
+                    fra.workerCount = parseInt($("#workerCount").val());
+                    fra.setType("mandelbrot");
+                    fra.render();
+                });
+
+                $("#fractal").click(function (event) {
+                    var x = event.offsetX;
+                    var y = event.offsetY;
+                    var r = fra.topLeft.real + ((fra.bottomRight.real - fra.topLeft.real) / fra.width) * x;
+                    var i = fra.topLeft.imag + ((fra.bottomRight.imag - fra.topLeft.imag) / fra.height) * y;
+
+                    julia.juliaPoint = new Complex(r, i);
+                    julia.render();
+                });
             });
-        });
-    </script>
-    <p>
-    </p>
-    <h1>
-        A Couple of Words on Performance</h1>
-    <p>
-        I've tested the code in three browsers
-        <ul>
-            <li>Chrome 18.0.1025.33 beta-m</li>
-            <li>Firefox 10.0.2</li>
-            <li>Opera 11.61</li>
-        </ul>
-        with different numbers of Web Workers. I did not have the patience to do a actual
-        benchmark comparing runtimes. However, Chrome is much faster than the other two.
-        Furthermore, it seems that Opera does not benefit from using more Web Workers.
-    </p>
-</body>
+        </script>
+        <p>
+        </p>
+        <h1>
+            A Couple of Words on Performance</h1>
+        <p>
+            I've tested the code in three browsers
+            <ul>
+                <li>Chrome 18.0.1025.33 beta-m</li>
+                <li>Firefox 10.0.2</li>
+                <li>Opera 11.61</li>
+            </ul>
+            with different numbers of Web Workers. I did not have the patience to do a actual
+            benchmark comparing runtimes. However, Chrome is much faster than the other two.
+            Furthermore, it seems that Opera does not benefit from using more Web Workers.
+        </p>
+        <h1>Source Code</h1>
+        <p>The source code is available for browsing, and forking at <a href="https://github.com/jacksondk/fractal">my GitHub 'fractal' repos page</a>.</p>
+    </body>
 </html>
